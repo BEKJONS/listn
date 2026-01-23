@@ -12,19 +12,22 @@ import (
 )
 
 func main() {
-	// Load env
+	// Load .env file if it exists (for local development only)
 	_ = godotenv.Load()
 
-	// Connect DB
+	// Get DATABASE_URL from environment (required for Railway)
 	dbUrl := os.Getenv("DATABASE_URL")
 	if dbUrl == "" {
-		// Only use default for local development
-		dbUrl = "postgres://postgres:postgres@localhost:5432/yandex_music_app?sslmode=disable"
-		log.Println("Warning: DATABASE_URL not set, using default local connection")
-	} else {
-		log.Println("Using DATABASE_URL from environment")
+		log.Fatal("DATABASE_URL environment variable is required")
 	}
-	
+
+	// Normalize connection string: Railway uses postgresql://, lib/pq accepts both
+	// but we'll normalize to postgres:// for consistency
+	if len(dbUrl) > 12 && dbUrl[:12] == "postgresql://" {
+		dbUrl = "postgres://" + dbUrl[12:]
+	}
+
+	log.Println("Connecting to database...")
 	db, err := database.Connect(dbUrl)
 	if err != nil {
 		log.Fatalf("Failed to connect to DB: %v", err)
@@ -69,13 +72,14 @@ func main() {
 		http.ServeFile(w, r, "front-end/dist/index.html")
 	})
 
+	// Get PORT from environment (Railway sets this automatically)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	log.Printf("Server starting on :%s", port)
+	log.Printf("Server starting on port %s", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Server failed to start: %v", err)
 	}
 }

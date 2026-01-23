@@ -24,19 +24,27 @@ func Connect(connStr string) (*sql.DB, error) {
 	db.SetConnMaxLifetime(5 * time.Minute)
 
 	// Retry connection with exponential backoff (for Railway/cloud deployments)
-	maxRetries := 10
-	retryDelay := 2 * time.Second
+	// Railway databases may take a few seconds to be ready
+	maxRetries := 15
+	initialDelay := 2 * time.Second
+	retryDelay := initialDelay
 
 	for i := 0; i < maxRetries; i++ {
 		if err := db.Ping(); err != nil {
 			if i < maxRetries-1 {
-				fmt.Printf("Database connection attempt %d/%d failed, retrying in %v...\n", i+1, maxRetries, retryDelay)
+				fmt.Printf("Database connection attempt %d/%d failed: %v\n", i+1, maxRetries, err)
+				fmt.Printf("Retrying in %v...\n", retryDelay)
 				time.Sleep(retryDelay)
-				retryDelay *= 2 // Exponential backoff
+				// Exponential backoff with max cap of 10 seconds
+				retryDelay *= 2
+				if retryDelay > 10*time.Second {
+					retryDelay = 10 * time.Second
+				}
 				continue
 			}
 			return nil, fmt.Errorf("failed to connect to database after %d attempts: %w", maxRetries, err)
 		}
+		// Connection successful
 		break
 	}
 
