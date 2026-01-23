@@ -1,0 +1,14 @@
+node_modules
+front-end/node_modules
+front-end/dist
+pg_data
+.git
+.env
+*.log
+.DS_Store
+.vscode
+.idea
+server
+*.swp
+*.swo
+*~
