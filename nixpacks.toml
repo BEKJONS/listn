@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["nodejs-20_x", "go_1_24"]
+
+[phases.install]
+cmds = [
+  "cd front-end && npm ci",
+  "cd front-end && npm run build",
+  "go mod download"
+]
+
+[phases.build]
+cmds = [
+  "go build -o main ./cmd/server/main.go"
+]
+
+[start]
+cmd = "./main"

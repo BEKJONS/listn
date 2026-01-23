@@ -18,8 +18,13 @@ func main() {
 	// Connect DB
 	dbUrl := os.Getenv("DATABASE_URL")
 	if dbUrl == "" {
+		// Only use default for local development
 		dbUrl = "postgres://postgres:postgres@localhost:5432/yandex_music_app?sslmode=disable"
+		log.Println("Warning: DATABASE_URL not set, using default local connection")
+	} else {
+		log.Println("Using DATABASE_URL from environment")
 	}
+	
 	db, err := database.Connect(dbUrl)
 	if err != nil {
 		log.Fatalf("Failed to connect to DB: %v", err)
